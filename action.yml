@@ -1,0 +1,22 @@
+name: 'Gemini Code Review Action'
+description: 'Provides a summary, release notes and review of pull requests using Gemini.'
+inputs:
+  token:
+    description: 'GITHUB_TOKEN'
+    required: true
+  gemini_api_key:
+    description: 'API key for the Gemini API'
+    required: true
+  gemini_model:
+    description: 'The Gemini model to use.'
+    required: false
+    default: 'gemini-1.5-flash'
+  # ... other inputs like debug, max_files, etc.
+  gemini_model_temperature:
+    description: 'The temperature to use for the model.'
+    required: false
+    default: '0.7'
+  # ... add all other inputs from your options.ts
+runs:
+  using: 'node20'
+  main: 'lib/main.js'
