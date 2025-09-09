@@ -44,3 +44,8 @@ export async function get_token_count(input: string): Promise<number> {
     return Math.ceil(input.length / 4)
   }
 }
+
+
+
+// this is a test to check if the project is working fine or not, this comment will be read by gemini 
+// AND IT WILL REVIEW IT.
