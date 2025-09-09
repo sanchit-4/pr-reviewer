@@ -1,0 +1,27 @@
+name: Gemini Code Review
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Gemini Code Review
+        uses: ./ # This tells the job to use the action in the current repository
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          
+          # Optional: To enable debug logs for troubleshooting
+          # debug: true
