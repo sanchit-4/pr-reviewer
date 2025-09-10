@@ -213,7 +213,7 @@ const token = core.getInput('token')
 const octokit = new Octokit({auth: `token ${token}`})
 const context = github.context
 const repo = context.repo
-const ASK_BOT = '@gemini' // Changed from @openai
+const ASK_BOT = '@gemini'
 
 export const handleReviewComment = async (
   bot: Bot,

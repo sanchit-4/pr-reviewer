@@ -49545,12 +49545,12 @@ const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
 const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_2__.Octokit({ auth: `token ${token}` });
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
-const COMMENT_GREETING = `:robot: OpenAI`;
-const COMMENT_TAG = '<!-- This is an auto-generated comment by OpenAI -->';
-const COMMENT_REPLY_TAG = '<!-- This is an auto-generated reply by OpenAI -->';
-const SUMMARIZE_TAG = '<!-- This is an auto-generated comment: summarize by openai -->';
-const DESCRIPTION_TAG = '<!-- This is an auto-generated comment: release notes by openai -->';
-const DESCRIPTION_TAG_END = '<!-- end of auto-generated comment: release notes by openai -->';
+const COMMENT_GREETING = `:robot: Gemini`;
+const COMMENT_TAG = '<!-- This is an auto-generated comment by Gemini -->';
+const COMMENT_REPLY_TAG = '<!-- This is an auto-generated reply by Gemini -->';
+const SUMMARIZE_TAG = '<!-- This is an auto-generated comment: summarize by Gemini -->';
+const DESCRIPTION_TAG = '<!-- This is an auto-generated comment: release notes by Gemini -->';
+const DESCRIPTION_TAG_END = '<!-- end of auto-generated comment: release notes by Gemini -->';
 class Commenter {
     /**
      * @param mode Can be "create", "replace", "append" and "prepend". Default is "replace".
@@ -52359,7 +52359,7 @@ const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
 const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_5__.Octokit({ auth: `token ${token}` });
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
-const ASK_BOT = '@gemini'; // Changed from @openai
+const ASK_BOT = '@gemini';
 const handleReviewComment = async (bot, options, prompts) => {
     const commenter = new _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .Commenter */ .Es();
     const inputs = new _options_js__WEBPACK_IMPORTED_MODULE_3__/* .Inputs */ .kq();
@@ -53331,6 +53331,9 @@ function divnumber(a, b) {
 }
 function addnumber(a, b) {
     return a - b;
+}
+function subnumber(a, b) {
+    return a + b;
 }
 
 
