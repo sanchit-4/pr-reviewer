@@ -86,6 +86,7 @@ import {handleReviewComment} from './review-comment.js'
 import {codeReview} from './review.js'
 
 async function run(): Promise<void> {
+  const geminiApiKey = core.getInput('gemini_api_key')
   const options: Options = new Options(
     core.getBooleanInput('debug'),
     core.getInput('max_files'),
@@ -118,7 +119,7 @@ async function run(): Promise<void> {
   // initialize Gemini bot
   let bot: Bot | null = null
   try {
-    bot = new Bot(options)
+    bot = new Bot(options, geminiApiKey)  
   } catch (e: any) {
     core.warning(
       `Skipped: failed to create bot, please check your gemini_api_key: ${e}, backtrace: ${e.stack}`

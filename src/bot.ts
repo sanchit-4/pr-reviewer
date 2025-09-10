@@ -129,18 +129,17 @@ export class Bot {
 
   private options: optionsJs.Options
 
-  constructor(options: optionsJs.Options) {
+  constructor(options: optionsJs.Options, apiKey?: string) {
     this.options = options
-    if (!process.env.GEMINI_API_KEY) {
+    if (!apiKey) {
       throw new Error(
-        "Unable to initialize the Gemini API, 'GEMINI_API_KEY' environment variable is not available"
+        "Unable to initialize the Gemini API, the API key is missing."
       )
     }
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+    const genAI = new GoogleGenerativeAI(apiKey) // Use the passed-in key
     this.model = genAI.getGenerativeModel({
       model: this.options.gemini_model,
-      // System instructions are a new feature; you can also prepend it to the first user message.
       systemInstruction: this.options.system_message,
     })
   }
