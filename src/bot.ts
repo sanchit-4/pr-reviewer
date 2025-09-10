@@ -299,13 +299,13 @@ export class Bot {
     message: string,
     history: ConversationHistory
   ): Promise<[string, ConversationHistory]> => {
-    const start = Date.now()
+    const start = Date.now();
     if (!message) {
-      return ['', history]
+      return ["", history];
     }
 
     try {
-      core.info('[bot.ts] Starting chat session...');
+      core.info("[bot.ts] Starting chat session...");
       const chatSession = this.model.startChat({
         history,
         generationConfig: {
@@ -317,54 +317,64 @@ export class Bot {
         core.info(`[bot.ts] Sending to Gemini: ${message}`);
       }
 
-      core.info('[bot.ts] Sending message to Gemini API...');
+      core.info("[bot.ts] Sending message to Gemini API...");
       const result = await utils.retry(
         chatSession.sendMessage.bind(chatSession),
         [message],
         this.options.gemini_retries
       );
 
-      const end = Date.now();
-      core.info(`[bot.ts] Gemini sendMessage response time: ${end - start} ms`);
+      // --- NEW DIAGNOSTIC LOGGING ---
+      core.info("#####################################################");
+      core.info("### [bot.ts] RAW API RESPONSE OBJECT              ###");
+      core.info("#####################################################");
+      core.info(JSON.stringify(result, null, 2)); // Log the entire object
+      core.info("#####################################################");
+      // ------------------------------------
+
+      // Defensive coding to check the structure of the response
+      if (
+        !result ||
+        !result.response ||
+        !Array.isArray(result.response.candidates) ||
+        result.response.candidates.length === 0
+      ) {
+        core.warning(
+          "[bot.ts] Gemini response is missing expected candidates. It may have been blocked."
+        );
+        if (result.response && result.response.promptFeedback) {
+            core.warning(`[bot.ts] Prompt Feedback: ${JSON.stringify(result.response.promptFeedback)}`);
+        }
+        return ["", history]; // Return empty if blocked or malformed
+      }
+
+      const finishReason = result.response.candidates[0].finishReason;
+      if (finishReason && finishReason !== "STOP") {
+          core.warning(`[bot.ts] Gemini response finished with reason: ${finishReason}`);
+          if(result.response.candidates[0].safetyRatings) {
+              core.warning(`[bot.ts] Safety Ratings: ${JSON.stringify(result.response.candidates[0].safetyRatings)}`)
+          }
+          return ["", history]; // Return empty if the reason isn't a normal stop
+      }
 
       const responseText = result.response.text();
       if (this.options.debug) {
-        core.info(`[bot.ts] Gemini response: ${responseText}`);
+        core.info(`[bot.ts] Gemini response text: ${responseText}`);
       }
 
-      // Construct the new history
       const newHistory: ConversationHistory = [
         ...history,
-        { role: 'user', parts: [{ text: message }] },
-        { role: 'model', parts: [{ text: responseText }] },
+        { role: "user", parts: [{ text: message }] },
+        { role: "model", parts: [{ text: responseText }] },
       ];
 
       return [responseText, newHistory];
 
     } catch (e: any) {
-      const errorMessage = `
-      #####################################################
-      ### FATAL ERROR in bot.ts during Gemini API call ###
-      #####################################################
-      
-      The request was sent, but Google's API returned an error.
-      This is the root cause. Check the details below for the reason.
-      Common causes:
-      1. Billing not enabled on the Google Cloud project.
-      2. "Vertex AI API" or "Generative Language API" not enabled.
-      3. Your location is not supported by the API.
-      4. The specific model ('${this.options.gemini_model}') is not available in your region.
-
-      MESSAGE: ${e.message}
-
-      STACK: ${e.stack}
-
-      RAW ERROR OBJECT: ${JSON.stringify(e, null, 2)}
-      `;
-      
-      // This will FAIL the action and print the entire message to the logs.
-      core.setFailed(errorMessage); 
+      // This is now a fallback, but we keep it just in case.
+      const errorMessage = `FATAL ERROR in bot.ts during Gemini API call: ${e.message}`;
+      core.setFailed(errorMessage);
       throw e;
     }
-  }
+  };
 }
