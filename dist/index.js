@@ -49855,24 +49855,99 @@ __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __we
 /* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(5077);
 /* harmony import */ var _review_comment_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(8693);
 /* harmony import */ var _review_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(5888);
+// // import * as core from '@actions/core'
+// // import {Bot} from './bot.js'
+// // import {Options, Prompts} from './options.js'
+// // import {handleReviewComment} from './review-comment.js'
+// // import {codeReview} from './review.js'
+// // async function run(): Promise<void> {
+// //   const options: Options = new Options(
+// //     core.getBooleanInput('debug'),
+// //     core.getInput('max_files'),
+// //     core.getBooleanInput('review_comment_lgtm'),
+// //     core.getMultilineInput('path_filters'),
+// //     core.getInput('system_message'),
+// //     core.getInput('openai_model'),
+// //     core.getInput('openai_model_temperature'),
+// //     core.getInput('openai_retries'),
+// //     core.getInput('openai_timeout_ms'),
+// //     core.getInput('openai_concurrency_limit')
+// //   )
+// //   const prompts: Prompts = new Prompts(
+// //     core.getInput('review_beginning'),
+// //     core.getInput('review_file'),
+// //     core.getInput('review_file_diff'),
+// //     core.getInput('review_patch_begin'),
+// //     core.getInput('review_patch'),
+// //     core.getInput('summarize_beginning'),
+// //     core.getInput('summarize_file_diff'),
+// //     core.getInput('summarize'),
+// //     core.getInput('summarize_release_notes'),
+// //     core.getInput('comment_beginning'),
+// //     core.getInput('comment_file'),
+// //     core.getInput('comment_file_diff'),
+// //     core.getInput('comment')
+// //   )
+// //   // initialize openai bot
+// //   let bot: Bot | null = null
+// //   try {
+// //     bot = new Bot(options)
+// //   } catch (e: any) {
+// //     core.warning(
+// //       `Skipped: failed to create bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
+// //     )
+// //     return
+// //   }
+// //   try {
+// //     // check if the event is pull_request
+// //     if (
+// //       process.env.GITHUB_EVENT_NAME === 'pull_request' ||
+// //       process.env.GITHUB_EVENT_NAME === 'pull_request_target'
+// //     ) {
+// //       await codeReview(bot, options, prompts)
+// //     } else if (
+// //       process.env.GITHUB_EVENT_NAME === 'pull_request_review_comment'
+// //     ) {
+// //       await handleReviewComment(bot, options, prompts)
+// //     } else {
+// //       core.warning('Skipped: this action only works on push event')
+// //     }
+// //   } catch (e: any) {
+// //     if (e instanceof Error) {
+// //       core.setFailed(`Failed to run: ${e.message}, backtrace: ${e.stack}`)
+// //     } else {
+// //       core.setFailed(`Failed to run: ${e}, backtrace: ${e.stack}`)
+// //     }
+// //   }
+// // }
+// // process
+// //   .on('unhandledRejection', (reason, p) => {
+// //     core.warning(`Unhandled Rejection at Promise: ${reason}, promise is ${p}`)
+// //   })
+// //   .on('uncaughtException', (e: any) => {
+// //     core.warning(`Uncaught Exception thrown: ${e}, backtrace: ${e.stack}`)
+// //   })
+// // await run()
+// // src/main.ts
 // import * as core from '@actions/core'
 // import {Bot} from './bot.js'
 // import {Options, Prompts} from './options.js'
 // import {handleReviewComment} from './review-comment.js'
 // import {codeReview} from './review.js'
 // async function run(): Promise<void> {
+//   const geminiApiKey = core.getInput('gemini_api_key')
 //   const options: Options = new Options(
 //     core.getBooleanInput('debug'),
 //     core.getInput('max_files'),
 //     core.getBooleanInput('review_comment_lgtm'),
 //     core.getMultilineInput('path_filters'),
 //     core.getInput('system_message'),
-//     core.getInput('openai_model'),
-//     core.getInput('openai_model_temperature'),
-//     core.getInput('openai_retries'),
-//     core.getInput('openai_timeout_ms'),
-//     core.getInput('openai_concurrency_limit')
+//     core.getInput('gemini_model'), // Changed
+//     core.getInput('gemini_model_temperature'), // Changed
+//     core.getInput('gemini_retries'), // Changed
+//     core.getInput('gemini_concurrency_limit') // Changed
 //   )
+//   // Prompts remain the same, they are generic
 //   const prompts: Prompts = new Prompts(
 //     core.getInput('review_beginning'),
 //     core.getInput('review_file'),
@@ -49888,13 +49963,13 @@ __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __we
 //     core.getInput('comment_file_diff'),
 //     core.getInput('comment')
 //   )
-//   // initialize openai bot
+//   // initialize Gemini bot
 //   let bot: Bot | null = null
 //   try {
-//     bot = new Bot(options)
+//     bot = new Bot(options, geminiApiKey)  
 //   } catch (e: any) {
 //     core.warning(
-//       `Skipped: failed to create bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
+//       `Skipped: failed to create bot, please check your gemini_api_key: ${e}, backtrace: ${e.stack}`
 //     )
 //     return
 //   }
@@ -49936,14 +50011,8 @@ __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __we
 
 async function run() {
     const geminiApiKey = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('gemini_api_key');
-    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('gemini_model'), // Changed
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('gemini_model_temperature'), // Changed
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('gemini_retries'), // Changed
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('gemini_concurrency_limit') // Changed
-    );
-    // Prompts remain the same, they are generic
+    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('gemini_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('gemini_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('gemini_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('gemini_concurrency_limit'));
     const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch_begin'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
-    // initialize Gemini bot
     let bot = null;
     try {
         bot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, geminiApiKey);
@@ -49953,7 +50022,6 @@ async function run() {
         return;
     }
     try {
-        // check if the event is pull_request
         if (process.env.GITHUB_EVENT_NAME === 'pull_request' ||
             process.env.GITHUB_EVENT_NAME === 'pull_request_target') {
             await (0,_review_js__WEBPACK_IMPORTED_MODULE_4__/* .codeReview */ .z)(bot, options, prompts);
@@ -49974,13 +50042,40 @@ async function run() {
         }
     }
 }
+// --- THIS IS THE ENHANCED, AGGRESSIVE ERROR HANDLING SECTION ---
 process
     .on('unhandledRejection', (reason, p) => {
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Unhandled Rejection at Promise: ${reason}, promise is ${p}`);
+    const reasonString = JSON.stringify(reason, null, 2);
+    const errorMessage = `
+    #####################################################
+    ### GLOBAL unhandledRejection DETECTED            ###
+    #####################################################
+    
+    This is a critical error that bypassed all other error handling.
+    This is the root cause.
+    
+    REASON: ${reasonString}
+    
+    PROMISE: ${p}
+    `;
+    _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(errorMessage);
 })
     .on('uncaughtException', (e) => {
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Uncaught Exception thrown: ${e}, backtrace: ${e.stack}`);
+    const errorMessage = `
+    #####################################################
+    ### GLOBAL uncaughtException DETECTED             ###
+    #####################################################
+    
+    This is a critical error that bypassed all other error handling.
+    This is the root cause.
+    
+    ERROR: ${e}
+    
+    STACK: ${e.stack}
+    `;
+    _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(errorMessage);
 });
+// -------------------------------------------------------------
 await run();
 
 __webpack_async_result__();
@@ -53141,6 +53236,9 @@ async function get_token_count(input, model) {
 }
 function mulnumber(a, b) {
     return a / b;
+}
+function divnumber(a, b) {
+    return a * b;
 }
 
 
