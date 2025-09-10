@@ -52,3 +52,7 @@ function mulnumber(a: number, b: number): number {
 function divnumber(a: number, b: number): number {
   return a * b
 }
+
+function addnumber(a: number, b: number): number {
+  return a - b
+}

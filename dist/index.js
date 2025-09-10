@@ -46756,7 +46756,7 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
-/***/ 3265:
+/***/ 9272:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 
@@ -48924,186 +48924,358 @@ if (!globalThis.fetch) {
 var core = __nccwpck_require__(2186);
 // EXTERNAL MODULE: ./node_modules/@google/generative-ai/dist/index.mjs
 var generative_ai_dist = __nccwpck_require__(3184);
+;// CONCATENATED MODULE: ./src/utils.ts
+// src/utils.ts
+
+const retry = async (fn, times, delayMs = 1000 // Add a delay between retries
+) => {
+    for (let i = 0; i < times; i++) {
+        try {
+            return await fn();
+        }
+        catch (error) {
+            core.warning(`[utils.retry] Attempt ${i + 1} failed with error: ${error.message}`);
+            if (i === times - 1) {
+                core.error(`[utils.retry] All ${times} attempts failed.`);
+                throw error; // Re-throw the last error
+            }
+            // Wait before trying again
+            await new Promise(res => setTimeout(res, delayMs * (i + 1)));
+        }
+    }
+    // This line should not be reachable, but is required for TypeScript
+    throw new Error("Retry logic failed unexpectedly.");
+};
+
 ;// CONCATENATED MODULE: ./src/bot.ts
+// // // // // import './fetch-polyfill.js'
+// // // // // import * as core from '@actions/core'
+// // // // // import * as openai from 'chatgpt'
+// // // // // import * as optionsJs from './options.js'
+// // // // // import * as utils from './utils.js'
+// // // // // // define type to save parentMessageId and conversationId
+// // // // // export type Ids = {
+// // // // //   parentMessageId?: string
+// // // // //   conversationId?: string
+// // // // // }
+// // // // // export class Bot {
+// // // // //   private api: openai.ChatGPTAPI | null = null // not free
+// // // // //   private options: optionsJs.Options
+// // // // //   constructor(options: optionsJs.Options) {
+// // // // //     this.options = options
+// // // // //     if (process.env.OPENAI_API_KEY) {
+// // // // //       this.api = new openai.ChatGPTAPI({
+// // // // //         systemMessage: options.system_message,
+// // // // //         apiKey: process.env.OPENAI_API_KEY,
+// // // // //         debug: options.debug,
+// // // // //         completionParams: {
+// // // // //           temperature: options.openai_model_temperature,
+// // // // //           model: options.openai_model
+// // // // //         }
+// // // // //       })
+// // // // //     } else {
+// // // // //       const err =
+// // // // //         "Unable to initialize the OpenAI API, both 'OPENAI_API_KEY' environment variable are not available"
+// // // // //       throw new Error(err)
+// // // // //     }
+// // // // //   }
+// // // // //   chat = async (message: string, ids: Ids): Promise<[string, Ids]> => {
+// // // // //     let new_ids: Ids = {}
+// // // // //     let response = ''
+// // // // //     try {
+// // // // //       ;[response, new_ids] = await this.chat_(message, ids)
+// // // // //     } catch (e: any) {
+// // // // //       core.warning(`Failed to chat: ${e}, backtrace: ${e.stack}`)
+// // // // //     } finally {
+// // // // //       return [response, new_ids]
+// // // // //     }
+// // // // //   }
+// // // // //   private chat_ = async (message: string, ids: Ids): Promise<[string, Ids]> => {
+// // // // //     // record timing
+// // // // //     const start = Date.now()
+// // // // //     if (!message) {
+// // // // //       return ['', {}]
+// // // // //     }
+// // // // //     if (this.options.debug) {
+// // // // //       core.info(`sending to openai: ${message}`)
+// // // // //     }
+// // // // //     let response: openai.ChatMessage | null = null
+// // // // //     if (this.api) {
+// // // // //       const opts: openai.SendMessageOptions = {
+// // // // //         timeoutMs: this.options.openai_timeout_ms
+// // // // //       }
+// // // // //       if (ids.parentMessageId) {
+// // // // //         opts.parentMessageId = ids.parentMessageId
+// // // // //       }
+// // // // //       try {
+// // // // //         response = await utils.retry(
+// // // // //           this.api.sendMessage.bind(this.api),
+// // // // //           [message, opts],
+// // // // //           this.options.openai_retries
+// // // // //         )
+// // // // //       } catch (e: any) {
+// // // // //         core.info(
+// // // // //           `response: ${response}, failed to stringify: ${e}, backtrace: ${e.stack}`
+// // // // //         )
+// // // // //       }
+// // // // //       const end = Date.now()
+// // // // //       core.info(`response: ${JSON.stringify(response)}`)
+// // // // //       core.info(
+// // // // //         `openai sendMessage (including retries) response time: ${
+// // // // //           end - start
+// // // // //         } ms`
+// // // // //       )
+// // // // //     } else {
+// // // // //       core.setFailed('The OpenAI API is not initialized')
+// // // // //     }
+// // // // //     let response_text = ''
+// // // // //     if (response) {
+// // // // //       response_text = response.text
+// // // // //     } else {
+// // // // //       core.warning('openai response is null')
+// // // // //     }
+// // // // //     // remove the prefix "with " in the response
+// // // // //     if (response_text.startsWith('with ')) {
+// // // // //       response_text = response_text.substring(5)
+// // // // //     }
+// // // // //     if (this.options.debug) {
+// // // // //       core.info(`openai responses: ${response_text}`)
+// // // // //     }
+// // // // //     const new_ids: Ids = {
+// // // // //       parentMessageId: response?.id,
+// // // // //       conversationId: response?.conversationId
+// // // // //     }
+// // // // //     return [response_text, new_ids]
+// // // // //   }
+// // // // // }
 // // // // import './fetch-polyfill.js'
 // // // // import * as core from '@actions/core'
-// // // // import * as openai from 'chatgpt'
+// // // // import {
+// // // //   GoogleGenerativeAI,
+// // // //   GenerativeModel,
+// // // //   Content,
+// // // //   Part
+// // // // } from '@google/generative-ai'
 // // // // import * as optionsJs from './options.js'
 // // // // import * as utils from './utils.js'
-// // // // // define type to save parentMessageId and conversationId
-// // // // export type Ids = {
-// // // //   parentMessageId?: string
-// // // //   conversationId?: string
-// // // // }
+// // // // // Define the type for conversation history to be compatible with Gemini's API
+// // // // export type ConversationHistory = Content[]
 // // // // export class Bot {
-// // // //   private api: openai.ChatGPTAPI | null = null // not free
+// // // //   private model: GenerativeModel
 // // // //   private options: optionsJs.Options
-// // // //   constructor(options: optionsJs.Options) {
+// // // //   constructor(options: optionsJs.Options, apiKey?: string) {
 // // // //     this.options = options
-// // // //     if (process.env.OPENAI_API_KEY) {
-// // // //       this.api = new openai.ChatGPTAPI({
-// // // //         systemMessage: options.system_message,
-// // // //         apiKey: process.env.OPENAI_API_KEY,
-// // // //         debug: options.debug,
-// // // //         completionParams: {
-// // // //           temperature: options.openai_model_temperature,
-// // // //           model: options.openai_model
-// // // //         }
-// // // //       })
-// // // //     } else {
-// // // //       const err =
-// // // //         "Unable to initialize the OpenAI API, both 'OPENAI_API_KEY' environment variable are not available"
-// // // //       throw new Error(err)
+// // // //     if (!apiKey) {
+// // // //       throw new Error(
+// // // //         "Unable to initialize the Gemini API, the API key is missing."
+// // // //       )
 // // // //     }
+// // // //     const genAI = new GoogleGenerativeAI(apiKey) // Use the passed-in key
+// // // //     this.model = genAI.getGenerativeModel({
+// // // //       model: this.options.gemini_model,
+// // // //       systemInstruction: this.options.system_message,
+// // // //     })
 // // // //   }
-// // // //   chat = async (message: string, ids: Ids): Promise<[string, Ids]> => {
-// // // //     let new_ids: Ids = {}
-// // // //     let response = ''
+// // // //   public getModel(): GenerativeModel {
+// // // //     return this.model;
+// // // //   }
+// // // //   chat = async (
+// // // //     message: string,
+// // // //     history: ConversationHistory
+// // // //   ): Promise<[string, ConversationHistory]> => {
 // // // //     try {
-// // // //       ;[response, new_ids] = await this.chat_(message, ids)
+// // // //       return await this.chat_(message, history)
 // // // //     } catch (e: any) {
 // // // //       core.warning(`Failed to chat: ${e}, backtrace: ${e.stack}`)
-// // // //     } finally {
-// // // //       return [response, new_ids]
+// // // //       return ['', history] // Return original history on failure
 // // // //     }
 // // // //   }
-// // // //   private chat_ = async (message: string, ids: Ids): Promise<[string, Ids]> => {
-// // // //     // record timing
+// // // //   private chat_ = async (
+// // // //     message: string,
+// // // //     history: ConversationHistory
+// // // //   ): Promise<[string, ConversationHistory]> => {
 // // // //     const start = Date.now()
 // // // //     if (!message) {
-// // // //       return ['', {}]
+// // // //       return ['', history]
 // // // //     }
 // // // //     if (this.options.debug) {
-// // // //       core.info(`sending to openai: ${message}`)
+// // // //       core.info(`Sending to Gemini: ${message}`)
 // // // //     }
-// // // //     let response: openai.ChatMessage | null = null
-// // // //     if (this.api) {
-// // // //       const opts: openai.SendMessageOptions = {
-// // // //         timeoutMs: this.options.openai_timeout_ms
-// // // //       }
-// // // //       if (ids.parentMessageId) {
-// // // //         opts.parentMessageId = ids.parentMessageId
-// // // //       }
-// // // //       try {
-// // // //         response = await utils.retry(
-// // // //           this.api.sendMessage.bind(this.api),
-// // // //           [message, opts],
-// // // //           this.options.openai_retries
-// // // //         )
-// // // //       } catch (e: any) {
-// // // //         core.info(
-// // // //           `response: ${response}, failed to stringify: ${e}, backtrace: ${e.stack}`
-// // // //         )
-// // // //       }
-// // // //       const end = Date.now()
-// // // //       core.info(`response: ${JSON.stringify(response)}`)
-// // // //       core.info(
-// // // //         `openai sendMessage (including retries) response time: ${
-// // // //           end - start
-// // // //         } ms`
-// // // //       )
-// // // //     } else {
-// // // //       core.setFailed('The OpenAI API is not initialized')
-// // // //     }
-// // // //     let response_text = ''
-// // // //     if (response) {
-// // // //       response_text = response.text
-// // // //     } else {
-// // // //       core.warning('openai response is null')
-// // // //     }
-// // // //     // remove the prefix "with " in the response
-// // // //     if (response_text.startsWith('with ')) {
-// // // //       response_text = response_text.substring(5)
-// // // //     }
+// // // //     // Use the retry utility for the API call
+// // // //     const chatSession = this.model.startChat({
+// // // //         history,
+// // // //         generationConfig: {
+// // // //           temperature: this.options.gemini_model_temperature,
+// // // //         }
+// // // //     });
+// // // //     const result = await utils.retry(
+// // // //       chatSession.sendMessage.bind(chatSession),
+// // // //       [message],
+// // // //       this.options.gemini_retries
+// // // //     )
+// // // //     const end = Date.now()
+// // // //     core.info(`Gemini sendMessage (including retries) response time: ${end - start} ms`)
+// // // //     const responseText = result.response.text()
 // // // //     if (this.options.debug) {
-// // // //       core.info(`openai responses: ${response_text}`)
+// // // //       core.info(`Gemini response: ${responseText}`)
 // // // //     }
-// // // //     const new_ids: Ids = {
-// // // //       parentMessageId: response?.id,
-// // // //       conversationId: response?.conversationId
-// // // //     }
-// // // //     return [response_text, new_ids]
+// // // //     // Construct the new history
+// // // //     const newHistory: ConversationHistory = [
+// // // //       ...history,
+// // // //       {role: 'user', parts: [{text: message}]},
+// // // //       {role: 'model', parts: [{text: responseText}]}
+// // // //     ]
+// // // //     return [responseText, newHistory]
 // // // //   }
 // // // // }
+// // // // src/bot.ts
 // // // import './fetch-polyfill.js'
 // // // import * as core from '@actions/core'
 // // // import {
 // // //   GoogleGenerativeAI,
 // // //   GenerativeModel,
 // // //   Content,
-// // //   Part
+// // //   HarmCategory,
+// // //   HarmBlockThreshold
 // // // } from '@google/generative-ai'
 // // // import * as optionsJs from './options.js'
 // // // import * as utils from './utils.js'
-// // // // Define the type for conversation history to be compatible with Gemini's API
 // // // export type ConversationHistory = Content[]
 // // // export class Bot {
 // // //   private model: GenerativeModel
 // // //   private options: optionsJs.Options
-// // //   constructor(options: optionsJs.Options, apiKey?: string) {
+// // //   constructor(options: optionsJs.Options, apiKey: string) {
 // // //     this.options = options
 // // //     if (!apiKey) {
 // // //       throw new Error(
 // // //         "Unable to initialize the Gemini API, the API key is missing."
 // // //       )
 // // //     }
-// // //     const genAI = new GoogleGenerativeAI(apiKey) // Use the passed-in key
+// // //     const genAI = new GoogleGenerativeAI(apiKey)
+// // //     const safetySettings = [
+// // //       {
+// // //         category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+// // //         threshold: HarmBlockThreshold.BLOCK_NONE,
+// // //       },
+// // //       {
+// // //         category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+// // //         threshold: HarmBlockThreshold.BLOCK_NONE,
+// // //       },
+// // //       {
+// // //         category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+// // //         threshold: HarmBlockThreshold.BLOCK_NONE,
+// // //       },
+// // //       {
+// // //         category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+// // //         threshold: HarmBlockThreshold.BLOCK_NONE,
+// // //       },
+// // //     ];
 // // //     this.model = genAI.getGenerativeModel({
 // // //       model: this.options.gemini_model,
 // // //       systemInstruction: this.options.system_message,
+// // //       safetySettings,
 // // //     })
 // // //   }
 // // //   public getModel(): GenerativeModel {
-// // //     return this.model;
+// // //     return this.model
 // // //   }
 // // //   chat = async (
 // // //     message: string,
 // // //     history: ConversationHistory
 // // //   ): Promise<[string, ConversationHistory]> => {
 // // //     try {
-// // //       return await this.chat_(message, history)
+// // //       // Attempt to call the internal chat_ method
+// // //       return await this.chat_(message, history);
 // // //     } catch (e: any) {
-// // //       core.warning(`Failed to chat: ${e}, backtrace: ${e.stack}`)
-// // //       return ['', history] // Return original history on failure
+// // //       // --- THIS IS THE ENHANCED CATCH BLOCK ---
+// // //       // Log a highly visible error message to the Actions console
+// // //       core.error(`\n### ERROR in bot.chat ###`);
+// // //       core.error(`This is the top-level error catch. The API call inside chat_() failed.`);
+// // //       // Log the actual error message and stack if they exist
+// // //       if (e.message) {
+// // //         core.error(`MESSAGE: ${e.message}`);
+// // //       }
+// // //       if (e.stack) {
+// // //         core.error(`STACK: ${e.stack}`);
+// // //       }
+// // //       // Also log the raw error object in case it's not a standard Error
+// // //       core.error(`RAW ERROR OBJECT: ${JSON.stringify(e)}`);
+// // //       // Return the empty response, as before
+// // //       return ['', history];
 // // //     }
 // // //   }
 // // //   private chat_ = async (
 // // //     message: string,
 // // //     history: ConversationHistory
 // // //   ): Promise<[string, ConversationHistory]> => {
-// // //     const start = Date.now()
+// // //     const start = Date.now();
 // // //     if (!message) {
-// // //       return ['', history]
+// // //       return ["", history];
 // // //     }
-// // //     if (this.options.debug) {
-// // //       core.info(`Sending to Gemini: ${message}`)
-// // //     }
-// // //     // Use the retry utility for the API call
-// // //     const chatSession = this.model.startChat({
+// // //     try {
+// // //       core.info("[bot.ts] Starting chat session...");
+// // //       const chatSession = this.model.startChat({
 // // //         history,
 // // //         generationConfig: {
 // // //           temperature: this.options.gemini_model_temperature,
+// // //         },
+// // //       });
+// // //       if (this.options.debug) {
+// // //         core.info(`[bot.ts] Sending to Gemini: ${message}`);
+// // //       }
+// // //       core.info("[bot.ts] Sending message to Gemini API...");
+// // //       const result = await utils.retry(
+// // //         chatSession.sendMessage.bind(chatSession),
+// // //         [message],
+// // //         this.options.gemini_retries
+// // //       );
+// // //       // --- NEW DIAGNOSTIC LOGGING ---
+// // //       core.info("#####################################################");
+// // //       core.info("### [bot.ts] RAW API RESPONSE OBJECT              ###");
+// // //       core.info("#####################################################");
+// // //       core.info(JSON.stringify(result, null, 2)); // Log the entire object
+// // //       core.info("#####################################################");
+// // //       // ------------------------------------
+// // //       // Defensive coding to check the structure of the response
+// // //       if (
+// // //         !result ||
+// // //         !result.response ||
+// // //         !Array.isArray(result.response.candidates) ||
+// // //         result.response.candidates.length === 0
+// // //       ) {
+// // //         core.warning(
+// // //           "[bot.ts] Gemini response is missing expected candidates. It may have been blocked."
+// // //         );
+// // //         if (result.response && result.response.promptFeedback) {
+// // //             core.warning(`[bot.ts] Prompt Feedback: ${JSON.stringify(result.response.promptFeedback)}`);
 // // //         }
-// // //     });
-// // //     const result = await utils.retry(
-// // //       chatSession.sendMessage.bind(chatSession),
-// // //       [message],
-// // //       this.options.gemini_retries
-// // //     )
-// // //     const end = Date.now()
-// // //     core.info(`Gemini sendMessage (including retries) response time: ${end - start} ms`)
-// // //     const responseText = result.response.text()
-// // //     if (this.options.debug) {
-// // //       core.info(`Gemini response: ${responseText}`)
+// // //         return ["", history]; // Return empty if blocked or malformed
+// // //       }
+// // //       const finishReason = result.response.candidates[0].finishReason;
+// // //       if (finishReason && finishReason !== "STOP") {
+// // //           core.warning(`[bot.ts] Gemini response finished with reason: ${finishReason}`);
+// // //           if(result.response.candidates[0].safetyRatings) {
+// // //               core.warning(`[bot.ts] Safety Ratings: ${JSON.stringify(result.response.candidates[0].safetyRatings)}`)
+// // //           }
+// // //           return ["", history]; // Return empty if the reason isn't a normal stop
+// // //       }
+// // //       const responseText = result.response.text();
+// // //       if (this.options.debug) {
+// // //         core.info(`[bot.ts] Gemini response text: ${responseText}`);
+// // //       }
+// // //       const newHistory: ConversationHistory = [
+// // //         ...history,
+// // //         { role: "user", parts: [{ text: message }] },
+// // //         { role: "model", parts: [{ text: responseText }] },
+// // //       ];
+// // //       return [responseText, newHistory];
+// // //     } catch (e: any) {
+// // //       // This is now a fallback, but we keep it just in case.
+// // //       const errorMessage = `FATAL ERROR in bot.ts during Gemini API call: ${e.message}`;
+// // //       core.setFailed(errorMessage);
+// // //       throw e;
 // // //     }
-// // //     // Construct the new history
-// // //     const newHistory: ConversationHistory = [
-// // //       ...history,
-// // //       {role: 'user', parts: [{text: message}]},
-// // //       {role: 'model', parts: [{text: responseText}]}
-// // //     ]
-// // //     return [responseText, newHistory]
-// // //   }
+// // //   };
 // // // }
 // // // src/bot.ts
 // // import './fetch-polyfill.js'
@@ -49113,10 +49285,9 @@ var generative_ai_dist = __nccwpck_require__(3184);
 // //   GenerativeModel,
 // //   Content,
 // //   HarmCategory,
-// //   HarmBlockThreshold
+// //   HarmBlockThreshold,
 // // } from '@google/generative-ai'
 // // import * as optionsJs from './options.js'
-// // import * as utils from './utils.js'
 // // export type ConversationHistory = Content[]
 // // export class Bot {
 // //   private model: GenerativeModel
@@ -49124,28 +49295,14 @@ var generative_ai_dist = __nccwpck_require__(3184);
 // //   constructor(options: optionsJs.Options, apiKey: string) {
 // //     this.options = options
 // //     if (!apiKey) {
-// //       throw new Error(
-// //         "Unable to initialize the Gemini API, the API key is missing."
-// //       )
+// //       throw new Error("Unable to initialize the Gemini API, the API key is missing.")
 // //     }
 // //     const genAI = new GoogleGenerativeAI(apiKey)
 // //     const safetySettings = [
-// //       {
-// //         category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-// //         threshold: HarmBlockThreshold.BLOCK_NONE,
-// //       },
-// //       {
-// //         category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-// //         threshold: HarmBlockThreshold.BLOCK_NONE,
-// //       },
-// //       {
-// //         category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-// //         threshold: HarmBlockThreshold.BLOCK_NONE,
-// //       },
-// //       {
-// //         category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-// //         threshold: HarmBlockThreshold.BLOCK_NONE,
-// //       },
+// //       { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+// //       { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+// //       { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+// //       { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
 // //     ];
 // //     this.model = genAI.getGenerativeModel({
 // //       model: this.options.gemini_model,
@@ -49160,99 +49317,56 @@ var generative_ai_dist = __nccwpck_require__(3184);
 // //     message: string,
 // //     history: ConversationHistory
 // //   ): Promise<[string, ConversationHistory]> => {
+// //     // --- THIS IS THE CANARY LOG. IF YOU DON'T SEE THIS, THE BUILD IS WRONG. ---
+// //     core.info("#####################################################");
+// //     core.info("### EXECUTING bot.chat [LATEST DIAGNOSTIC VERSION] ###");
+// //     core.info("#####################################################");
+// //     // -----------------------------------------------------------------------
 // //     try {
-// //       // Attempt to call the internal chat_ method
-// //       return await this.chat_(message, history);
+// //       return await this.chat_(message, history)
 // //     } catch (e: any) {
-// //       // --- THIS IS THE ENHANCED CATCH BLOCK ---
-// //       // Log a highly visible error message to the Actions console
-// //       core.error(`\n### ERROR in bot.chat ###`);
-// //       core.error(`This is the top-level error catch. The API call inside chat_() failed.`);
-// //       // Log the actual error message and stack if they exist
-// //       if (e.message) {
-// //         core.error(`MESSAGE: ${e.message}`);
-// //       }
-// //       if (e.stack) {
-// //         core.error(`STACK: ${e.stack}`);
-// //       }
-// //       // Also log the raw error object in case it's not a standard Error
-// //       core.error(`RAW ERROR OBJECT: ${JSON.stringify(e)}`);
-// //       // Return the empty response, as before
-// //       return ['', history];
+// //       // If the canary appears but this error also appears, we have our answer.
+// //       core.error(`### CATCH BLOCK in bot.chat TRIGGERED ###`);
+// //       core.error(`MESSAGE: ${e.message}`);
+// //       return ['', history]
 // //     }
 // //   }
 // //   private chat_ = async (
 // //     message: string,
 // //     history: ConversationHistory
 // //   ): Promise<[string, ConversationHistory]> => {
-// //     const start = Date.now();
+// //     const start = Date.now()
 // //     if (!message) {
+// //       return ['', history]
+// //     }
+// //     core.info('[bot.ts chat_] Starting chat session...');
+// //     const chatSession = this.model.startChat({
+// //       history,
+// //       generationConfig: {
+// //         temperature: this.options.gemini_model_temperature,
+// //       },
+// //     });
+// //     if (this.options.debug) {
+// //       core.info(`[bot.ts chat_] Sending to Gemini: ${message}`);
+// //     }
+// //     // --- REMOVED THE RETRY WRAPPER FOR A DIRECT CALL ---
+// //     core.info('[bot.ts chat_] Sending message DIRECTLY to Gemini API...');
+// //     const result = await chatSession.sendMessage(message);
+// //     // --------------------------------------------------
+// //     core.info("[bot.ts chat_] RAW API RESPONSE:");
+// //     core.info(JSON.stringify(result, null, 2));
+// //     if (!result || !result.response || !result.response.candidates || result.response.candidates.length === 0) {
+// //       core.warning("[bot.ts chat_] Gemini response is missing candidates. It may have been blocked.");
 // //       return ["", history];
 // //     }
-// //     try {
-// //       core.info("[bot.ts] Starting chat session...");
-// //       const chatSession = this.model.startChat({
-// //         history,
-// //         generationConfig: {
-// //           temperature: this.options.gemini_model_temperature,
-// //         },
-// //       });
-// //       if (this.options.debug) {
-// //         core.info(`[bot.ts] Sending to Gemini: ${message}`);
-// //       }
-// //       core.info("[bot.ts] Sending message to Gemini API...");
-// //       const result = await utils.retry(
-// //         chatSession.sendMessage.bind(chatSession),
-// //         [message],
-// //         this.options.gemini_retries
-// //       );
-// //       // --- NEW DIAGNOSTIC LOGGING ---
-// //       core.info("#####################################################");
-// //       core.info("### [bot.ts] RAW API RESPONSE OBJECT              ###");
-// //       core.info("#####################################################");
-// //       core.info(JSON.stringify(result, null, 2)); // Log the entire object
-// //       core.info("#####################################################");
-// //       // ------------------------------------
-// //       // Defensive coding to check the structure of the response
-// //       if (
-// //         !result ||
-// //         !result.response ||
-// //         !Array.isArray(result.response.candidates) ||
-// //         result.response.candidates.length === 0
-// //       ) {
-// //         core.warning(
-// //           "[bot.ts] Gemini response is missing expected candidates. It may have been blocked."
-// //         );
-// //         if (result.response && result.response.promptFeedback) {
-// //             core.warning(`[bot.ts] Prompt Feedback: ${JSON.stringify(result.response.promptFeedback)}`);
-// //         }
-// //         return ["", history]; // Return empty if blocked or malformed
-// //       }
-// //       const finishReason = result.response.candidates[0].finishReason;
-// //       if (finishReason && finishReason !== "STOP") {
-// //           core.warning(`[bot.ts] Gemini response finished with reason: ${finishReason}`);
-// //           if(result.response.candidates[0].safetyRatings) {
-// //               core.warning(`[bot.ts] Safety Ratings: ${JSON.stringify(result.response.candidates[0].safetyRatings)}`)
-// //           }
-// //           return ["", history]; // Return empty if the reason isn't a normal stop
-// //       }
-// //       const responseText = result.response.text();
-// //       if (this.options.debug) {
-// //         core.info(`[bot.ts] Gemini response text: ${responseText}`);
-// //       }
-// //       const newHistory: ConversationHistory = [
+// //     const responseText = result.response.text();
+// //     const newHistory: ConversationHistory = [
 // //         ...history,
-// //         { role: "user", parts: [{ text: message }] },
-// //         { role: "model", parts: [{ text: responseText }] },
-// //       ];
-// //       return [responseText, newHistory];
-// //     } catch (e: any) {
-// //       // This is now a fallback, but we keep it just in case.
-// //       const errorMessage = `FATAL ERROR in bot.ts during Gemini API call: ${e.message}`;
-// //       core.setFailed(errorMessage);
-// //       throw e;
-// //     }
-// //   };
+// //         { role: 'user', parts: [{ text: message }] },
+// //         { role: 'model', parts: [{ text: responseText }] },
+// //     ];
+// //     return [responseText, newHistory]; // Return the new history
+// // }
 // // }
 // // src/bot.ts
 // import './fetch-polyfill.js'
@@ -49290,65 +49404,63 @@ var generative_ai_dist = __nccwpck_require__(3184);
 //   public getModel(): GenerativeModel {
 //     return this.model
 //   }
-//   chat = async (
+//   // We have merged chat and chat_ into a single public function.
+//   // There is no other function to call. This is the single point of truth.
+//   public async chat(
 //     message: string,
 //     history: ConversationHistory
-//   ): Promise<[string, ConversationHistory]> => {
-//     // --- THIS IS THE CANARY LOG. IF YOU DON'T SEE THIS, THE BUILD IS WRONG. ---
+//   ): Promise<[string, ConversationHistory]> {
 //     core.info("#####################################################");
-//     core.info("### EXECUTING bot.chat [LATEST DIAGNOSTIC VERSION] ###");
+//     core.info("### EXECUTING SINGLE PUBLIC chat function [FINAL] ###");
 //     core.info("#####################################################");
-//     // -----------------------------------------------------------------------
-//     try {
-//       return await this.chat_(message, history)
-//     } catch (e: any) {
-//       // If the canary appears but this error also appears, we have our answer.
-//       core.error(`### CATCH BLOCK in bot.chat TRIGGERED ###`);
-//       core.error(`MESSAGE: ${e.message}`);
-//       return ['', history]
-//     }
-//   }
-//   private chat_ = async (
-//     message: string,
-//     history: ConversationHistory
-//   ): Promise<[string, ConversationHistory]> => {
-//     const start = Date.now()
 //     if (!message) {
-//       return ['', history]
-//     }
-//     core.info('[bot.ts chat_] Starting chat session...');
-//     const chatSession = this.model.startChat({
-//       history,
-//       generationConfig: {
-//         temperature: this.options.gemini_model_temperature,
-//       },
-//     });
-//     if (this.options.debug) {
-//       core.info(`[bot.ts chat_] Sending to Gemini: ${message}`);
-//     }
-//     // --- REMOVED THE RETRY WRAPPER FOR A DIRECT CALL ---
-//     core.info('[bot.ts chat_] Sending message DIRECTLY to Gemini API...');
-//     const result = await chatSession.sendMessage(message);
-//     // --------------------------------------------------
-//     core.info("[bot.ts chat_] RAW API RESPONSE:");
-//     core.info(JSON.stringify(result, null, 2));
-//     if (!result || !result.response || !result.response.candidates || result.response.candidates.length === 0) {
-//       core.warning("[bot.ts chat_] Gemini response is missing candidates. It may have been blocked.");
 //       return ["", history];
 //     }
-//     const responseText = result.response.text();
-//     const newHistory: ConversationHistory = [
+//     try {
+//       core.info("[bot.ts] Starting chat session...");
+//       const chatSession = this.model.startChat({
+//         history,
+//         generationConfig: {
+//           temperature: this.options.gemini_model_temperature,
+//         },
+//       });
+//       if (this.options.debug) {
+//         core.info(`[bot.ts] Sending to Gemini: ${message}`);
+//       }
+//       core.info('[bot.ts] Sending message DIRECTLY to Gemini API...');
+//       const result = await chatSession.sendMessage(message);
+//       core.info("[bot.ts] RAW API RESPONSE:");
+//       core.info(JSON.stringify(result, null, 2));
+//       if (!result || !result.response || !result.response.candidates || result.response.candidates.length === 0) {
+//         core.warning("[bot.ts] Gemini response is missing candidates. It may have been blocked.");
+//         return ["", history];
+//       }
+//       const responseText = result.response.text();
+//       const newHistory: ConversationHistory = [
 //         ...history,
 //         { role: 'user', parts: [{ text: message }] },
 //         { role: 'model', parts: [{ text: responseText }] },
-//     ];
-//     return [responseText, newHistory]; // Return the new history
+//       ];
+//       return [responseText, newHistory];
+//     } catch (e: any) {
+//       const errorMessage = `
+//       #####################################################
+//       ### FATAL ERROR in bot.ts during API call         ###
+//       #####################################################
+//       MESSAGE: ${e.message}
+//       STACK: ${e.stack}
+//       RAW ERROR OBJECT: ${JSON.stringify(e, null, 2)}
+//       `;
+//       core.setFailed(errorMessage);
+//       // We return an empty response but the action will be marked as failed.
+//       return ["", history];
+//     }
+//   }
 // }
-// }
-// src/bot.ts
 
 
 
+ // Import the retry utility again
 class Bot {
     model;
     options;
@@ -49373,17 +49485,8 @@ class Bot {
     getModel() {
         return this.model;
     }
-    // We have merged chat and chat_ into a single public function.
-    // There is no other function to call. This is the single point of truth.
     async chat(message, history) {
-        core.info("#####################################################");
-        core.info("### EXECUTING SINGLE PUBLIC chat function [FINAL] ###");
-        core.info("#####################################################");
-        if (!message) {
-            return ["", history];
-        }
         try {
-            core.info("[bot.ts] Starting chat session...");
             const chatSession = this.model.startChat({
                 history,
                 generationConfig: {
@@ -49393,10 +49496,8 @@ class Bot {
             if (this.options.debug) {
                 core.info(`[bot.ts] Sending to Gemini: ${message}`);
             }
-            core.info('[bot.ts] Sending message DIRECTLY to Gemini API...');
-            const result = await chatSession.sendMessage(message);
-            core.info("[bot.ts] RAW API RESPONSE:");
-            core.info(JSON.stringify(result, null, 2));
+            // Use the retry utility to make the call resilient
+            const result = await retry(() => chatSession.sendMessage(message), this.options.gemini_retries);
             if (!result || !result.response || !result.response.candidates || result.response.candidates.length === 0) {
                 core.warning("[bot.ts] Gemini response is missing candidates. It may have been blocked.");
                 return ["", history];
@@ -49410,17 +49511,7 @@ class Bot {
             return [responseText, newHistory];
         }
         catch (e) {
-            const errorMessage = `
-      #####################################################
-      ### FATAL ERROR in bot.ts during API call         ###
-      #####################################################
-      
-      MESSAGE: ${e.message}
-      STACK: ${e.stack}
-      RAW ERROR OBJECT: ${JSON.stringify(e, null, 2)}
-      `;
-            core.setFailed(errorMessage);
-            // We return an empty response but the action will be marked as failed.
+            core.setFailed(`FATAL ERROR during Gemini API call: ${e.message}`);
             return ["", history];
         }
     }
@@ -49851,28 +49942,103 @@ ${chain}
 __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _bot_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(3265);
+/* harmony import */ var _bot_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9272);
 /* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(5077);
 /* harmony import */ var _review_comment_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(8693);
 /* harmony import */ var _review_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(5888);
+// // // import * as core from '@actions/core'
+// // // import {Bot} from './bot.js'
+// // // import {Options, Prompts} from './options.js'
+// // // import {handleReviewComment} from './review-comment.js'
+// // // import {codeReview} from './review.js'
+// // // async function run(): Promise<void> {
+// // //   const options: Options = new Options(
+// // //     core.getBooleanInput('debug'),
+// // //     core.getInput('max_files'),
+// // //     core.getBooleanInput('review_comment_lgtm'),
+// // //     core.getMultilineInput('path_filters'),
+// // //     core.getInput('system_message'),
+// // //     core.getInput('openai_model'),
+// // //     core.getInput('openai_model_temperature'),
+// // //     core.getInput('openai_retries'),
+// // //     core.getInput('openai_timeout_ms'),
+// // //     core.getInput('openai_concurrency_limit')
+// // //   )
+// // //   const prompts: Prompts = new Prompts(
+// // //     core.getInput('review_beginning'),
+// // //     core.getInput('review_file'),
+// // //     core.getInput('review_file_diff'),
+// // //     core.getInput('review_patch_begin'),
+// // //     core.getInput('review_patch'),
+// // //     core.getInput('summarize_beginning'),
+// // //     core.getInput('summarize_file_diff'),
+// // //     core.getInput('summarize'),
+// // //     core.getInput('summarize_release_notes'),
+// // //     core.getInput('comment_beginning'),
+// // //     core.getInput('comment_file'),
+// // //     core.getInput('comment_file_diff'),
+// // //     core.getInput('comment')
+// // //   )
+// // //   // initialize openai bot
+// // //   let bot: Bot | null = null
+// // //   try {
+// // //     bot = new Bot(options)
+// // //   } catch (e: any) {
+// // //     core.warning(
+// // //       `Skipped: failed to create bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
+// // //     )
+// // //     return
+// // //   }
+// // //   try {
+// // //     // check if the event is pull_request
+// // //     if (
+// // //       process.env.GITHUB_EVENT_NAME === 'pull_request' ||
+// // //       process.env.GITHUB_EVENT_NAME === 'pull_request_target'
+// // //     ) {
+// // //       await codeReview(bot, options, prompts)
+// // //     } else if (
+// // //       process.env.GITHUB_EVENT_NAME === 'pull_request_review_comment'
+// // //     ) {
+// // //       await handleReviewComment(bot, options, prompts)
+// // //     } else {
+// // //       core.warning('Skipped: this action only works on push event')
+// // //     }
+// // //   } catch (e: any) {
+// // //     if (e instanceof Error) {
+// // //       core.setFailed(`Failed to run: ${e.message}, backtrace: ${e.stack}`)
+// // //     } else {
+// // //       core.setFailed(`Failed to run: ${e}, backtrace: ${e.stack}`)
+// // //     }
+// // //   }
+// // // }
+// // // process
+// // //   .on('unhandledRejection', (reason, p) => {
+// // //     core.warning(`Unhandled Rejection at Promise: ${reason}, promise is ${p}`)
+// // //   })
+// // //   .on('uncaughtException', (e: any) => {
+// // //     core.warning(`Uncaught Exception thrown: ${e}, backtrace: ${e.stack}`)
+// // //   })
+// // // await run()
+// // // src/main.ts
 // // import * as core from '@actions/core'
 // // import {Bot} from './bot.js'
 // // import {Options, Prompts} from './options.js'
 // // import {handleReviewComment} from './review-comment.js'
 // // import {codeReview} from './review.js'
 // // async function run(): Promise<void> {
+// //   const geminiApiKey = core.getInput('gemini_api_key')
 // //   const options: Options = new Options(
 // //     core.getBooleanInput('debug'),
 // //     core.getInput('max_files'),
 // //     core.getBooleanInput('review_comment_lgtm'),
 // //     core.getMultilineInput('path_filters'),
 // //     core.getInput('system_message'),
-// //     core.getInput('openai_model'),
-// //     core.getInput('openai_model_temperature'),
-// //     core.getInput('openai_retries'),
-// //     core.getInput('openai_timeout_ms'),
-// //     core.getInput('openai_concurrency_limit')
+// //     core.getInput('gemini_model'), // Changed
+// //     core.getInput('gemini_model_temperature'), // Changed
+// //     core.getInput('gemini_retries'), // Changed
+// //     core.getInput('gemini_concurrency_limit') // Changed
 // //   )
+// //   // Prompts remain the same, they are generic
 // //   const prompts: Prompts = new Prompts(
 // //     core.getInput('review_beginning'),
 // //     core.getInput('review_file'),
@@ -49888,13 +50054,13 @@ __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __we
 // //     core.getInput('comment_file_diff'),
 // //     core.getInput('comment')
 // //   )
-// //   // initialize openai bot
+// //   // initialize Gemini bot
 // //   let bot: Bot | null = null
 // //   try {
-// //     bot = new Bot(options)
+// //     bot = new Bot(options, geminiApiKey)  
 // //   } catch (e: any) {
 // //     core.warning(
-// //       `Skipped: failed to create bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
+// //       `Skipped: failed to create bot, please check your gemini_api_key: ${e}, backtrace: ${e.stack}`
 // //     )
 // //     return
 // //   }
@@ -49931,78 +50097,47 @@ __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __we
 // // src/main.ts
 // import * as core from '@actions/core'
 // import {Bot} from './bot.js'
-// import {Options, Prompts} from './options.js'
-// import {handleReviewComment} from './review-comment.js'
-// import {codeReview} from './review.js'
+// import {Options} from './options.js'
+// // --- MINIMAL TEST CASE ---
 // async function run(): Promise<void> {
-//   const geminiApiKey = core.getInput('gemini_api_key')
-//   const options: Options = new Options(
-//     core.getBooleanInput('debug'),
-//     core.getInput('max_files'),
-//     core.getBooleanInput('review_comment_lgtm'),
-//     core.getMultilineInput('path_filters'),
-//     core.getInput('system_message'),
-//     core.getInput('gemini_model'), // Changed
-//     core.getInput('gemini_model_temperature'), // Changed
-//     core.getInput('gemini_retries'), // Changed
-//     core.getInput('gemini_concurrency_limit') // Changed
-//   )
-//   // Prompts remain the same, they are generic
-//   const prompts: Prompts = new Prompts(
-//     core.getInput('review_beginning'),
-//     core.getInput('review_file'),
-//     core.getInput('review_file_diff'),
-//     core.getInput('review_patch_begin'),
-//     core.getInput('review_patch'),
-//     core.getInput('summarize_beginning'),
-//     core.getInput('summarize_file_diff'),
-//     core.getInput('summarize'),
-//     core.getInput('summarize_release_notes'),
-//     core.getInput('comment_beginning'),
-//     core.getInput('comment_file'),
-//     core.getInput('comment_file_diff'),
-//     core.getInput('comment')
-//   )
-//   // initialize Gemini bot
-//   let bot: Bot | null = null
+//   core.info("--- Starting Minimal Gemini SDK Test ---");
+//   let bot: Bot | null = null;
 //   try {
-//     bot = new Bot(options, geminiApiKey)  
+//     const geminiApiKey = core.getInput('gemini_api_key');
+//     const options: Options = new Options(
+//       true, // debug
+//       '1',  // max_files
+//       false, // review_comment_lgtm
+//       null, // path_filters
+//       'You are a helpful assistant.', // system_message
+//       core.getInput('gemini_model'),
+//       core.getInput('gemini_model_temperature'),
+//       '1', // retries
+//       '1'  // concurrency_limit
+//     );
+//     core.info("Initializing Bot...");
+//     bot = new Bot(options, geminiApiKey);
+//     core.info("Bot initialized successfully.");
+//     core.info("Attempting a single, hardcoded chat call...");
+//     const [responseText, newHistory] = await bot.chat("Hello, world!", []);
+//     // If we reach this line, the API call was successful.
+//     core.info("--- MINIMAL TEST SUCCEEDED ---");
+//     core.info(`Gemini Response: ${responseText}`);
 //   } catch (e: any) {
-//     core.warning(
-//       `Skipped: failed to create bot, please check your gemini_api_key: ${e}, backtrace: ${e.stack}`
-//     )
-//     return
-//   }
-//   try {
-//     // check if the event is pull_request
-//     if (
-//       process.env.GITHUB_EVENT_NAME === 'pull_request' ||
-//       process.env.GITHUB_EVENT_NAME === 'pull_request_target'
-//     ) {
-//       await codeReview(bot, options, prompts)
-//     } else if (
-//       process.env.GITHUB_EVENT_NAME === 'pull_request_review_comment'
-//     ) {
-//       await handleReviewComment(bot, options, prompts)
-//     } else {
-//       core.warning('Skipped: this action only works on push event')
-//     }
-//   } catch (e: any) {
-//     if (e instanceof Error) {
-//       core.setFailed(`Failed to run: ${e.message}, backtrace: ${e.stack}`)
-//     } else {
-//       core.setFailed(`Failed to run: ${e}, backtrace: ${e.stack}`)
-//     }
+//     // If any error happens during this minimal test, it will be caught here.
+//     core.setFailed(`--- MINIMAL TEST FAILED --- \nMESSAGE: ${e.message}\nSTACK: ${e.stack}`);
 //   }
 // }
+// // -------------------------
+// // We keep the global handlers just in case.
 // process
-//   .on('unhandledRejection', (reason, p) => {
-//     core.warning(`Unhandled Rejection at Promise: ${reason}, promise is ${p}`)
+//   .on('unhandledRejection', (reason: any) => {
+//     core.setFailed(`GLOBAL unhandledRejection: ${JSON.stringify(reason)}`);
 //   })
 //   .on('uncaughtException', (e: any) => {
-//     core.warning(`Uncaught Exception thrown: ${e}, backtrace: ${e.stack}`)
-//   })
-// await run()
+//     core.setFailed(`GLOBAL uncaughtException: ${e.message}`);
+//   });
+// await run();
 // src/main.ts
 
 
@@ -50010,18 +50145,11 @@ __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __we
 
 
 async function run() {
-    const geminiApiKey = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('gemini_api_key');
-    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('gemini_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('gemini_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('gemini_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('gemini_concurrency_limit'));
-    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch_begin'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
-    let bot = null;
     try {
-        bot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, geminiApiKey);
-    }
-    catch (e) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: failed to create bot, please check your gemini_api_key: ${e}, backtrace: ${e.stack}`);
-        return;
-    }
-    try {
+        const geminiApiKey = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('gemini_api_key');
+        const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('gemini_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('gemini_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('gemini_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('gemini_concurrency_limit'));
+        const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch_begin'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
+        const bot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, geminiApiKey);
         if (process.env.GITHUB_EVENT_NAME === 'pull_request' ||
             process.env.GITHUB_EVENT_NAME === 'pull_request_target') {
             await (0,_review_js__WEBPACK_IMPORTED_MODULE_4__/* .codeReview */ .z)(bot, options, prompts);
@@ -50030,52 +50158,13 @@ async function run() {
             await (0,_review_comment_js__WEBPACK_IMPORTED_MODULE_3__/* .handleReviewComment */ .V)(bot, options, prompts);
         }
         else {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning('Skipped: this action only works on push event');
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning('Skipped: this action only works on PR events.');
         }
     }
     catch (e) {
-        if (e instanceof Error) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(`Failed to run: ${e.message}, backtrace: ${e.stack}`);
-        }
-        else {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(`Failed to run: ${e}, backtrace: ${e.stack}`);
-        }
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(`Action failed with error: ${e.message}`);
     }
 }
-// --- THIS IS THE ENHANCED, AGGRESSIVE ERROR HANDLING SECTION ---
-process
-    .on('unhandledRejection', (reason, p) => {
-    const reasonString = JSON.stringify(reason, null, 2);
-    const errorMessage = `
-    #####################################################
-    ### GLOBAL unhandledRejection DETECTED            ###
-    #####################################################
-    
-    This is a critical error that bypassed all other error handling.
-    This is the root cause.
-    
-    REASON: ${reasonString}
-    
-    PROMISE: ${p}
-    `;
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(errorMessage);
-})
-    .on('uncaughtException', (e) => {
-    const errorMessage = `
-    #####################################################
-    ### GLOBAL uncaughtException DETECTED             ###
-    #####################################################
-    
-    This is a critical error that bypassed all other error handling.
-    This is the root cause.
-    
-    ERROR: ${e}
-    
-    STACK: ${e.stack}
-    `;
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(errorMessage);
-});
-// -------------------------------------------------------------
 await run();
 
 __webpack_async_result__();
@@ -53239,6 +53328,9 @@ function mulnumber(a, b) {
 }
 function divnumber(a, b) {
     return a * b;
+}
+function addnumber(a, b) {
+    return a - b;
 }
 
 
