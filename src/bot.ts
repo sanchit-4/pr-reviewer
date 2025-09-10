@@ -342,10 +342,28 @@ export class Bot {
       return [responseText, newHistory];
 
     } catch (e: any) {
-      core.error(`\n### ERROR in bot.ts during Gemini API call ###`);
-      core.error(`MESSAGE: ${e.message}`);
-      core.error(`STACK: ${e.stack}\n`);
-      // Re-throw the error to ensure the calling function knows it failed
+      const errorMessage = `
+      #####################################################
+      ### FATAL ERROR in bot.ts during Gemini API call ###
+      #####################################################
+      
+      The request was sent, but Google's API returned an error.
+      This is the root cause. Check the details below for the reason.
+      Common causes:
+      1. Billing not enabled on the Google Cloud project.
+      2. "Vertex AI API" or "Generative Language API" not enabled.
+      3. Your location is not supported by the API.
+      4. The specific model ('${this.options.gemini_model}') is not available in your region.
+
+      MESSAGE: ${e.message}
+
+      STACK: ${e.stack}
+
+      RAW ERROR OBJECT: ${JSON.stringify(e, null, 2)}
+      `;
+      
+      // This will FAIL the action and print the entire message to the logs.
+      core.setFailed(errorMessage); 
       throw e;
     }
   }
