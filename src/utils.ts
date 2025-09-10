@@ -9,6 +9,10 @@ export const retry = async (
     try {
       return await fn(...args)
     } catch (error) {
+      core.error(`[utils.retry] Attempt ${i + 1} of ${times} failed.`);
+      core.error(`[utils.retry] Error message: ${(error as Error).message}`);
+      // The full error object is the most important part
+      core.error(`[utils.retry] Full error object: ${JSON.stringify(error, null, 2)}`);
       if (i === times - 1) {
         throw error
       }
