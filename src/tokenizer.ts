@@ -45,3 +45,6 @@ export async function get_token_count(input: string, model:GenerativeModel): Pro
   }
 }
 
+function mulnumber(a: number, b: number): number {
+  return a / b
+}
