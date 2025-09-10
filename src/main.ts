@@ -168,6 +168,7 @@ import {handleReviewComment} from './review-comment.js'
 import {codeReview} from './review.js'
 
 async function run(): Promise<void> {
+  core.setFailed("THIS IS THE LATEST CODE. THE BUILD IS WORKING.");
   const geminiApiKey = core.getInput('gemini_api_key')
 
   const options: Options = new Options(
