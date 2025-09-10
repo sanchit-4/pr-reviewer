@@ -60,3 +60,7 @@ function addnumber(a: number, b: number): number {
 function subnumber(a: number, b: number): number {
   return a + b
 }
+
+function getremainder(a: number, b: number): number {
+  return a % b
+}

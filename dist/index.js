@@ -53335,6 +53335,9 @@ function addnumber(a, b) {
 function subnumber(a, b) {
     return a + b;
 }
+function getremainder(a, b) {
+    return a % b;
+}
 
 
 /***/ }),
