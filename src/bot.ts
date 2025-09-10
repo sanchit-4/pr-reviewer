@@ -144,6 +144,10 @@ export class Bot {
     })
   }
 
+  public getModel(): GenerativeModel {
+    return this.model;
+  }
+
   chat = async (
     message: string,
     history: ConversationHistory

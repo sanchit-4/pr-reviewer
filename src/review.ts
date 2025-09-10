@@ -579,7 +579,7 @@ export const codeReview = async (
       ins.file_diff = file_diff
 
       // NOTE: tokenizer is now async
-      const file_diff_tokens = await tokenizer.get_token_count(file_diff)
+      const file_diff_tokens = await tokenizer.get_token_count(file_diff, bot.getModel())
       if (file_diff_tokens < options.max_tokens_for_extra_content) {
         try {
           const [summarize_resp] = await bot.chat(
@@ -651,7 +651,7 @@ export const codeReview = async (
           if (file_content) {
             ins.file_content = file_content
             // NOTE: tokenizer is now async
-            const file_content_tokens = await tokenizer.get_token_count(file_content)
+            const file_content_tokens = await tokenizer.get_token_count(file_content, bot.getModel())
             if (file_content_tokens < options.max_tokens_for_extra_content) {
               try {
                 const [resp, new_history] = await bot.chat(
@@ -673,7 +673,7 @@ export const codeReview = async (
           if (file_diff) {
             ins.file_diff = file_diff
              // NOTE: tokenizer is now async
-            const file_diff_tokens = await tokenizer.get_token_count(file_diff)
+            const file_diff_tokens = await tokenizer.get_token_count(file_diff, bot.getModel())
             if (file_diff_tokens < options.max_tokens_for_extra_content) {
               try {
                 const [, new_history] = await bot.chat(
