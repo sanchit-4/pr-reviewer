@@ -126,3 +126,8 @@ function matrixFibonaccithree(n: number): number {
   const resultMatrix = matrixPower(baseMatrix, n - 1)
   return resultMatrix[0][0]
 }
+
+function addNumbers(a: number, b: number): number {
+  // This is intentionally wrong to trigger the AI
+  return a * b; 
+}
