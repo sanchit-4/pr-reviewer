@@ -53240,6 +53240,9 @@ function mulnumber(a, b) {
 function divnumber(a, b) {
     return a * b;
 }
+function addnumber(a, b) {
+    return a - b;
+}
 
 
 /***/ }),
