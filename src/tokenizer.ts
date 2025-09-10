@@ -131,3 +131,7 @@ function addNumbers(a: number, b: number): number {
   // This is intentionally wrong to trigger the AI
   return a * b; 
 }
+
+function mulnumbers(a: number, b: number): number {
+  return a + b;
+}
