@@ -330,7 +330,7 @@ export const handleReviewComment = async (
     if (file_content) {
       inputs.file_content = file_content
       // NOTE: tokenizer is now async
-      const file_content_tokens = await tokenizer.get_token_count(file_content)
+      const file_content_tokens = await tokenizer.get_token_count(file_content, bot.getModel())
       if (file_content_tokens < options.max_tokens_for_extra_content) {
         const [, file_content_history] = await bot.chat(
           prompts.render_comment_file(inputs),
@@ -346,7 +346,7 @@ export const handleReviewComment = async (
         inputs.diff = file_diff
       }
        // NOTE: tokenizer is now async
-      const file_diff_tokens = await tokenizer.get_token_count(file_diff)
+      const file_diff_tokens = await tokenizer.get_token_count(file_diff, bot.getModel())
       if (file_diff_tokens < options.max_tokens_for_extra_content) {
         const [, file_diff_history] = await bot.chat(
           prompts.render_comment_file_diff(inputs),

@@ -12,7 +12,7 @@
 // }
 
 // src/tokenizer.ts
-import {GoogleGenerativeAI} from '@google/generative-ai'
+import {GenerativeModel, GoogleGenerativeAI} from '@google/generative-ai'
 import * as core from '@actions/core'
 
 // We need a model instance to count tokens. Initialize it once.
@@ -29,7 +29,7 @@ try {
   core.warning(`Could not initialize tokenizer: ${e.message}`)
 }
 
-export async function get_token_count(input: string): Promise<number> {
+export async function get_token_count(input: string, model:GenerativeModel): Promise<number> {
   if (!model) {
     core.warning(
       'Token counter not available. Falling back to character count / 4.'
