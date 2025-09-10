@@ -1,5 +1,7 @@
-name: 'Gemini Code Review Action'
+name: 'Gemini Code Review'
 description: 'Provides a summary, release notes and review of pull requests using Gemini.'
+author: 'Your Name'
+
 inputs:
   token:
     description: 'GITHUB_TOKEN'
@@ -7,16 +9,44 @@ inputs:
   gemini_api_key:
     description: 'API key for the Gemini API'
     required: true
+  
+  # --- ADD ALL THE MISSING INPUTS BELOW ---
+  debug:
+    description: 'Enable debug logging'
+    required: false
+    default: 'false'
+  max_files:
+    description: 'Maximum number of files to review.'
+    required: false
+    default: '60'
+  review_comment_lgtm:
+    description: 'Post "LGTM" comments when changes look good.'
+    required: false
+    default: 'false'
+  path_filters:
+    description: 'Path filters for files to include/exclude.'
+    required: false
+  system_message:
+    description: 'The system message to set the context for the bot.'
+    required: false
+    default: 'You are an expert AI programmer. Your purpose is to provide a detailed code review, identifying potential bugs, security vulnerabilities, and areas for improvement. Provide a summary and generate release notes.'
   gemini_model:
     description: 'The Gemini model to use.'
     required: false
     default: 'gemini-1.5-flash'
-  # ... other inputs like debug, max_files, etc.
   gemini_model_temperature:
-    description: 'The temperature to use for the model.'
+    description: 'The temperature for the model.'
     required: false
     default: '0.7'
-  # ... add all other inputs from your options.ts
+  gemini_retries:
+    description: 'Number of retries for API calls.'
+    required: false
+    default: '3'
+  gemini_concurrency_limit:
+    description: 'Concurrency limit for API calls.'
+    required: false
+    default: '4'
+
 runs:
   using: 'node20'
   main: 'lib/index.js'
