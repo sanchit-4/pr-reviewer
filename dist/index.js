@@ -53046,6 +53046,9 @@ async function get_token_count(input, model) {
         return Math.ceil(input.length / 4);
     }
 }
+function mulnumber(a, b) {
+    return a / b;
+}
 
 
 /***/ }),
