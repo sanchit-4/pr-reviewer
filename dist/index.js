@@ -46756,7 +46756,7 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
-/***/ 9272:
+/***/ 3265:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 
@@ -48924,27 +48924,6 @@ if (!globalThis.fetch) {
 var core = __nccwpck_require__(2186);
 // EXTERNAL MODULE: ./node_modules/@google/generative-ai/dist/index.mjs
 var generative_ai_dist = __nccwpck_require__(3184);
-;// CONCATENATED MODULE: ./src/utils.ts
-
-const retry = async (fn, args, times) => {
-    for (let i = 0; i < times; i++) {
-        try {
-            return await fn(...args);
-        }
-        catch (error) {
-            core.error(`[utils.retry] Attempt ${i + 1} of ${times} failed.`);
-            core.error(`[utils.retry] Error message: ${error.message}`);
-            // The full error object is the most important part
-            core.error(`[utils.retry] Full error object: ${JSON.stringify(error, null, 2)}`);
-            if (i === times - 1) {
-                throw error;
-            }
-            core.warning(`Function failed on try ${i + 1}, retrying...`);
-            continue;
-        }
-    }
-};
-
 ;// CONCATENATED MODULE: ./src/bot.ts
 // // // import './fetch-polyfill.js'
 // // // import * as core from '@actions/core'
@@ -49279,7 +49258,6 @@ const retry = async (fn, args, times) => {
 
 
 
-
 class Bot {
     model;
     options;
@@ -49325,32 +49303,33 @@ class Bot {
         if (!message) {
             return ['', history];
         }
-        try {
-            core.info('[bot.ts chat_] Starting chat session...');
-            const chatSession = this.model.startChat({
-                history,
-                generationConfig: {
-                    temperature: this.options.gemini_model_temperature,
-                },
-            });
-            if (this.options.debug) {
-                core.info(`[bot.ts chat_] Sending to Gemini: ${message}`);
-            }
-            const result = await retry(chatSession.sendMessage.bind(chatSession), [message], this.options.gemini_retries);
-            core.info("[bot.ts chat_] RAW API RESPONSE:");
-            core.info(JSON.stringify(result, null, 2));
-            if (!result || !result.response || !result.response.candidates || result.response.candidates.length === 0) {
-                core.warning("[bot.ts chat_] Gemini response is missing candidates. It may have been blocked.");
-                return ["", history];
-            }
-            const responseText = result.response.text();
-            return [responseText, history];
+        core.info('[bot.ts chat_] Starting chat session...');
+        const chatSession = this.model.startChat({
+            history,
+            generationConfig: {
+                temperature: this.options.gemini_model_temperature,
+            },
+        });
+        if (this.options.debug) {
+            core.info(`[bot.ts chat_] Sending to Gemini: ${message}`);
         }
-        catch (e) {
-            const errorMessage = `FATAL ERROR in bot.ts chat_() during API call: ${e.message}`;
-            core.setFailed(errorMessage);
-            throw e;
+        // --- REMOVED THE RETRY WRAPPER FOR A DIRECT CALL ---
+        core.info('[bot.ts chat_] Sending message DIRECTLY to Gemini API...');
+        const result = await chatSession.sendMessage(message);
+        // --------------------------------------------------
+        core.info("[bot.ts chat_] RAW API RESPONSE:");
+        core.info(JSON.stringify(result, null, 2));
+        if (!result || !result.response || !result.response.candidates || result.response.candidates.length === 0) {
+            core.warning("[bot.ts chat_] Gemini response is missing candidates. It may have been blocked.");
+            return ["", history];
         }
+        const responseText = result.response.text();
+        const newHistory = [
+            ...history,
+            { role: 'user', parts: [{ text: message }] },
+            { role: 'model', parts: [{ text: responseText }] },
+        ];
+        return [responseText, newHistory]; // Return the new history
     };
 }
 
@@ -49779,7 +49758,7 @@ ${chain}
 __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _bot_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9272);
+/* harmony import */ var _bot_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(3265);
 /* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(5077);
 /* harmony import */ var _review_comment_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(8693);
 /* harmony import */ var _review_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(5888);

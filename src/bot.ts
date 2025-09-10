@@ -393,7 +393,6 @@ import {
   HarmBlockThreshold,
 } from '@google/generative-ai'
 import * as optionsJs from './options.js'
-import * as utils from './utils.js'
 
 export type ConversationHistory = Content[]
 
@@ -455,40 +454,38 @@ export class Bot {
       return ['', history]
     }
 
-    try {
-      core.info('[bot.ts chat_] Starting chat session...');
-      const chatSession = this.model.startChat({
-        history,
-        generationConfig: {
-          temperature: this.options.gemini_model_temperature,
-        },
-      });
+    core.info('[bot.ts chat_] Starting chat session...');
+    const chatSession = this.model.startChat({
+      history,
+      generationConfig: {
+        temperature: this.options.gemini_model_temperature,
+      },
+    });
 
-      if (this.options.debug) {
-        core.info(`[bot.ts chat_] Sending to Gemini: ${message}`);
-      }
-
-      const result = await utils.retry(
-        chatSession.sendMessage.bind(chatSession),
-        [message],
-        this.options.gemini_retries
-      );
-
-      core.info("[bot.ts chat_] RAW API RESPONSE:");
-      core.info(JSON.stringify(result, null, 2));
-
-      if (!result || !result.response || !result.response.candidates || result.response.candidates.length === 0) {
-        core.warning("[bot.ts chat_] Gemini response is missing candidates. It may have been blocked.");
-        return ["", history];
-      }
-
-      const responseText = result.response.text();
-      return [responseText, history];
-
-    } catch (e: any) {
-        const errorMessage = `FATAL ERROR in bot.ts chat_() during API call: ${e.message}`;
-        core.setFailed(errorMessage);
-        throw e;
+    if (this.options.debug) {
+      core.info(`[bot.ts chat_] Sending to Gemini: ${message}`);
     }
-  }
+
+    // --- REMOVED THE RETRY WRAPPER FOR A DIRECT CALL ---
+    core.info('[bot.ts chat_] Sending message DIRECTLY to Gemini API...');
+    const result = await chatSession.sendMessage(message);
+    // --------------------------------------------------
+
+    core.info("[bot.ts chat_] RAW API RESPONSE:");
+    core.info(JSON.stringify(result, null, 2));
+
+    if (!result || !result.response || !result.response.candidates || result.response.candidates.length === 0) {
+      core.warning("[bot.ts chat_] Gemini response is missing candidates. It may have been blocked.");
+      return ["", history];
+    }
+
+    const responseText = result.response.text();
+    const newHistory: ConversationHistory = [
+        ...history,
+        { role: 'user', parts: [{ text: message }] },
+        { role: 'model', parts: [{ text: responseText }] },
+    ];
+    
+    return [responseText, newHistory]; // Return the new history
+}
 }
