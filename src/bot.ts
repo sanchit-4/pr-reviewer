@@ -214,7 +214,9 @@ import * as core from '@actions/core'
 import {
   GoogleGenerativeAI,
   GenerativeModel,
-  Content
+  Content,
+  HarmCategory,
+  HarmBlockThreshold
 } from '@google/generative-ai'
 import * as optionsJs from './options.js'
 import * as utils from './utils.js'
@@ -234,9 +236,28 @@ export class Bot {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey)
+    const safetySettings = [
+      {
+        category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+        threshold: HarmBlockThreshold.BLOCK_NONE,
+      },
+      {
+        category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+        threshold: HarmBlockThreshold.BLOCK_NONE,
+      },
+      {
+        category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+        threshold: HarmBlockThreshold.BLOCK_NONE,
+      },
+      {
+        category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+        threshold: HarmBlockThreshold.BLOCK_NONE,
+      },
+    ];
     this.model = genAI.getGenerativeModel({
       model: this.options.gemini_model,
       systemInstruction: this.options.system_message,
+      safetySettings,
     })
   }
 
