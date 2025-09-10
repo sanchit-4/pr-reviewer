@@ -163,107 +163,52 @@
 // src/main.ts
 import * as core from '@actions/core'
 import {Bot} from './bot.js'
-import {Options, Prompts} from './options.js'
-import {handleReviewComment} from './review-comment.js'
-import {codeReview} from './review.js'
+import {Options} from './options.js'
 
+// --- MINIMAL TEST CASE ---
 async function run(): Promise<void> {
-  core.setFailed("THIS IS THE LATEST CODE. THE BUILD IS WORKING.");
-  const geminiApiKey = core.getInput('gemini_api_key')
-
-  const options: Options = new Options(
-    core.getBooleanInput('debug'),
-    core.getInput('max_files'),
-    core.getBooleanInput('review_comment_lgtm'),
-    core.getMultilineInput('path_filters'),
-    core.getInput('system_message'),
-    core.getInput('gemini_model'),
-    core.getInput('gemini_model_temperature'),
-    core.getInput('gemini_retries'),
-    core.getInput('gemini_concurrency_limit')
-  )
+  core.info("--- Starting Minimal Gemini SDK Test ---");
+  let bot: Bot | null = null;
   
-  const prompts: Prompts = new Prompts(
-    core.getInput('review_beginning'),
-    core.getInput('review_file'),
-    core.getInput('review_file_diff'),
-    core.getInput('review_patch_begin'),
-    core.getInput('review_patch'),
-    core.getInput('summarize_beginning'),
-    core.getInput('summarize_file_diff'),
-    core.getInput('summarize'),
-    core.getInput('summarize_release_notes'),
-    core.getInput('comment_beginning'),
-    core.getInput('comment_file'),
-    core.getInput('comment_file_diff'),
-    core.getInput('comment')
-  )
-
-  let bot: Bot | null = null
   try {
-    bot = new Bot(options, geminiApiKey)
-  } catch (e: any) {
-    core.warning(
-      `Skipped: failed to create bot, please check your gemini_api_key: ${e}, backtrace: ${e.stack}`
-    )
-    return
-  }
+    const geminiApiKey = core.getInput('gemini_api_key');
+    const options: Options = new Options(
+      true, // debug
+      '1',  // max_files
+      false, // review_comment_lgtm
+      null, // path_filters
+      'You are a helpful assistant.', // system_message
+      core.getInput('gemini_model'),
+      core.getInput('gemini_model_temperature'),
+      '1', // retries
+      '1'  // concurrency_limit
+    );
 
-  try {
-    if (
-      process.env.GITHUB_EVENT_NAME === 'pull_request' ||
-      process.env.GITHUB_EVENT_NAME === 'pull_request_target'
-    ) {
-      await codeReview(bot, options, prompts)
-    } else if (
-      process.env.GITHUB_EVENT_NAME === 'pull_request_review_comment'
-    ) {
-      await handleReviewComment(bot, options, prompts)
-    } else {
-      core.warning('Skipped: this action only works on push event')
-    }
+    core.info("Initializing Bot...");
+    bot = new Bot(options, geminiApiKey);
+    core.info("Bot initialized successfully.");
+
+    core.info("Attempting a single, hardcoded chat call...");
+    const [responseText, newHistory] = await bot.chat("Hello, world!", []);
+
+    // If we reach this line, the API call was successful.
+    core.info("--- MINIMAL TEST SUCCEEDED ---");
+    core.info(`Gemini Response: ${responseText}`);
+
   } catch (e: any) {
-    if (e instanceof Error) {
-      core.setFailed(`Failed to run: ${e.message}, backtrace: ${e.stack}`)
-    } else {
-      core.setFailed(`Failed to run: ${e}, backtrace: ${e.stack}`)
-    }
+    // If any error happens during this minimal test, it will be caught here.
+    core.setFailed(`--- MINIMAL TEST FAILED --- \nMESSAGE: ${e.message}\nSTACK: ${e.stack}`);
   }
 }
+// -------------------------
 
-// --- THIS IS THE ENHANCED, AGGRESSIVE ERROR HANDLING SECTION ---
+// We keep the global handlers just in case.
 process
-  .on('unhandledRejection', (reason: any, p: Promise<any>) => {
-    const reasonString = JSON.stringify(reason, null, 2);
-    const errorMessage = `
-    #####################################################
-    ### GLOBAL unhandledRejection DETECTED            ###
-    #####################################################
-    
-    This is a critical error that bypassed all other error handling.
-    This is the root cause.
-    
-    REASON: ${reasonString}
-    
-    PROMISE: ${p}
-    `;
-    core.setFailed(errorMessage);
+  .on('unhandledRejection', (reason: any) => {
+    core.setFailed(`GLOBAL unhandledRejection: ${JSON.stringify(reason)}`);
   })
   .on('uncaughtException', (e: any) => {
-    const errorMessage = `
-    #####################################################
-    ### GLOBAL uncaughtException DETECTED             ###
-    #####################################################
-    
-    This is a critical error that bypassed all other error handling.
-    This is the root cause.
-    
-    ERROR: ${e}
-    
-    STACK: ${e.stack}
-    `;
-    core.setFailed(errorMessage);
+    core.setFailed(`GLOBAL uncaughtException: ${e.message}`);
   });
-// -------------------------------------------------------------
 
-await run()
+await run();
