@@ -135,3 +135,7 @@ function addNumbers(a: number, b: number): number {
 function mulnumbers(a: number, b: number): number {
   return a + b;
 }
+
+function divnumbers(a: number, b: number): number {
+  return a - b;
+}
