@@ -24,7 +24,7 @@ jobs:
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
           debug: true # Explicitly set to false. Change to true for logs.
           review_comment_lgtm: false # Explicitly set this boolean too.
-          gemini_model: 'gemini-pro'
+          gemini_model: 'gemini-1.5-flash'
           
           
           # Optional: To enable debug logs for troubleshooting
