@@ -270,10 +270,28 @@ export class Bot {
     history: ConversationHistory
   ): Promise<[string, ConversationHistory]> => {
     try {
-      return await this.chat_(message, history)
+      // Attempt to call the internal chat_ method
+      return await this.chat_(message, history);
     } catch (e: any) {
-      core.warning(`Failed to chat: ${e.message}, backtrace: ${e.stack}`)
-      return ['', history] // Return original history on failure
+      // --- THIS IS THE ENHANCED CATCH BLOCK ---
+      
+      // Log a highly visible error message to the Actions console
+      core.error(`\n### ERROR in bot.chat ###`);
+      core.error(`This is the top-level error catch. The API call inside chat_() failed.`);
+      
+      // Log the actual error message and stack if they exist
+      if (e.message) {
+        core.error(`MESSAGE: ${e.message}`);
+      }
+      if (e.stack) {
+        core.error(`STACK: ${e.stack}`);
+      }
+      
+      // Also log the raw error object in case it's not a standard Error
+      core.error(`RAW ERROR OBJECT: ${JSON.stringify(e)}`);
+      
+      // Return the empty response, as before
+      return ['', history];
     }
   }
 
