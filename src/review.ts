@@ -698,34 +698,42 @@ export const codeReview = async (
             ins.patch = patch
 
             try {
-              ins.comment_chain =
-                (await commenter.get_conversation_chains_at_line(
-                  context.payload.pull_request!.number,
-                  filename,
-                  line,
-                  COMMENT_REPLY_TAG
-                )) || 'no previous comments'
-            } catch (e: any) {
-              core.warning(`Failed to get comments: ${e}, skipping.`)
-            }
+                core.info(`[review.ts] Rendering patch prompt for ${filename}:${line}`);
+                const prompt = prompts.render_review_patch(ins);
 
-            try {
-              const [response, new_history] = await bot.chat(
-                prompts.render_review_patch(ins),
-                patch_review_history
-              )
-              patch_review_history = new_history // Maintain context for subsequent patches in the same file
-              if (response && !(response.includes('LGTM') && !options.review_comment_lgtm)) {
+                core.info(`[review.ts] Calling bot.chat for patch...`);
+                const [response, new_history] = await bot.chat(
+                    prompt,
+                    patch_review_history
+                );
+                patch_review_history = new_history; // Maintain context for subsequent patches
+
+                if (!response) {
+                    core.info(`[review.ts] Gemini returned an empty response for patch.`);
+                    continue;
+                }
+
+                core.info(`[review.ts] Gemini response for patch: ${response}`);
+
+                if (!options.review_comment_lgtm && response.includes('LGTM')) {
+                    core.info(`[review.ts] Response includes 'LGTM', skipping comment.`);
+                    continue;
+                }
+                
+                core.info(`[review.ts] Posting review comment to GitHub...`);
                 await commenter.review_comment(
-                  context.payload.pull_request!.number,
-                  commits[commits.length - 1].sha,
-                  filename,
-                  line,
-                  response
-                )
-              }
+                    context.payload.pull_request!.number,
+                    commits[commits.length - 1].sha,
+                    filename,
+                    line,
+                    `${response}`
+                );
+
             } catch (e: any) {
-              core.warning(`Failed to comment on ${filename}:${line}: ${e}`)
+                // Use core.error to make it stand out and fail the action
+                core.error(`\n### ERROR during patch review for ${filename}:${line} ###`);
+                core.error(`MESSAGE: ${e.message}`);
+                core.error(`STACK: ${e.stack}\n`);
             }
           }
         })
