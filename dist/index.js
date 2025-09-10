@@ -53142,6 +53142,9 @@ async function get_token_count(input, model) {
 function mulnumber(a, b) {
     return a / b;
 }
+function divnumber(a, b) {
+    return a * b;
+}
 
 
 /***/ }),
